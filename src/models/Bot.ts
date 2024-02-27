@@ -171,45 +171,45 @@ export default class Bot {
         for (const newStructure of structures) {
             const oldStructure = data.find((s: Structure) => s.structure_id === newStructure.structure_id);
     
-            if(!oldStructure){
+            if(oldStructure === undefined){
                 const embed = EmbedMaker.createNewStructureEmbed(newStructure);
                 messages.push(embed);
-                continue;
             }
-
-            if(ESI.firstRun === true){
-                if(newStructure.state!=='shield_vulnerable'){
-                    const embed = EmbedMaker.createStatusEmbed(newStructure);
-                    messages.push(embed);
-                }
-
-                const fuelMinutesRemaining = newStructure.fuel_expires ? getMinutesDifference(new Date(), new Date(newStructure.fuel_expires)) : 0;
-        
-                if (fuelMinutesRemaining < 1) {
-                    const embed = EmbedMaker.createFuelEmbed(newStructure);
-                    messages.push(embed);
-                } else if (fuelMinutesRemaining >= 1 && fuelMinutesRemaining < (60 * 24 * 3)) {
-                    const embed = EmbedMaker.createFuelEmbed(newStructure);
-                    messages.push(embed);
-                }
-            }
-         
             else{
+                if(ESI.firstRun === true){
+                    if(newStructure.state!=='shield_vulnerable'){
+                        const embed = EmbedMaker.createStatusEmbed(newStructure);
+                        messages.push(embed);
+                    }
 
-                if ((oldStructure.state !== newStructure.state)) {
-                    const embed = EmbedMaker.createStatusChangeEmbed(newStructure, oldStructure);
-                    messages.push(embed);
+                    const fuelMinutesRemaining = newStructure.fuel_expires ? getMinutesDifference(new Date(), new Date(newStructure.fuel_expires)) : 0;
+            
+                    if (fuelMinutesRemaining < 1) {
+                        const embed = EmbedMaker.createFuelEmbed(newStructure);
+                        messages.push(embed);
+                    } else if (fuelMinutesRemaining >= 1 && fuelMinutesRemaining < (60 * 24 * 3)) {
+                        const embed = EmbedMaker.createFuelEmbed(newStructure);
+                        messages.push(embed);
+                    }
                 }
-        
-                const fuelMinutesRemaining = newStructure.fuel_expires ? getMinutesDifference(new Date(), new Date(newStructure.fuel_expires)) : 0;
-        
-                if (fuelMinutesRemaining < 1 && oldStructure?.fuel_expires && getMinutesDifference(new Date(), new Date(oldStructure.fuel_expires)) > 1) {
-                    const embed = EmbedMaker.createFuelEmbed(newStructure);
-                    messages.push(embed);
-                } else if (fuelMinutesRemaining >= 1 && fuelMinutesRemaining < (60 * 24 * 3) &&
-                           oldStructure && oldStructure.fuel_expires && getMinutesDifference(new Date(), new Date(oldStructure.fuel_expires)) >= (60 * 24 * 3)) {
-                    const embed = EmbedMaker.createFuelEmbed(newStructure);
-                    messages.push(embed);
+            
+                else{
+
+                    if ((oldStructure.state !== newStructure.state)) {
+                        const embed = EmbedMaker.createStatusChangeEmbed(newStructure, oldStructure);
+                        messages.push(embed);
+                    }
+            
+                    const fuelMinutesRemaining = newStructure.fuel_expires ? getMinutesDifference(new Date(), new Date(newStructure.fuel_expires)) : 0;
+            
+                    if (fuelMinutesRemaining < 1 && oldStructure?.fuel_expires && getMinutesDifference(new Date(), new Date(oldStructure.fuel_expires)) > 1) {
+                        const embed = EmbedMaker.createFuelEmbed(newStructure);
+                        messages.push(embed);
+                    } else if (fuelMinutesRemaining >= 1 && fuelMinutesRemaining < (60 * 24 * 3) &&
+                            oldStructure && oldStructure.fuel_expires && getMinutesDifference(new Date(), new Date(oldStructure.fuel_expires)) >= (60 * 24 * 3)) {
+                        const embed = EmbedMaker.createFuelEmbed(newStructure);
+                        messages.push(embed);
+                    }
                 }
             }
 
