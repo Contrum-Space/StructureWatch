@@ -171,6 +171,11 @@ export default class Bot {
         for (const newStructure of structures) {
             const oldStructure = data.find((s: Structure) => s.structure_id === newStructure.structure_id);
     
+            if(!oldStructure){
+                const embed = EmbedMaker.createNewStructureEmbed(newStructure);
+                messages.push(embed);
+                continue;
+            }
 
             if(ESI.firstRun === true){
                 if(newStructure.state!=='shield_vulnerable'){

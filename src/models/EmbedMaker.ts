@@ -49,6 +49,40 @@ export default class EmbedMaker{
         return embed;
     }
 
+    public static createNewStructureEmbed(structure: Structure): Embed{
+
+        const fuelMinutesRemaining = structure.fuel_expires ? getMinutesDifference(new Date(), new Date(structure.fuel_expires)) : 0;
+
+        const status = mapStateToMessage(structure.state);
+
+        let embedType: Highlight_Type = 'normal';
+
+        if(fuelMinutesRemaining < 1){
+            embedType = 'critical'
+        }
+        else if(fuelMinutesRemaining >= 1 && fuelMinutesRemaining < (60*24*3)){
+            embedType = 'warning'
+        }
+
+        if(status.includes('REINFORCED') || status.includes('ARMOR') || status.includes('HULL') || status === 'unachoring' || status === 'anchoring'){
+            embedType = 'critical';
+        }
+
+        const embed = new EmbedBuilder()
+            .setColor(this.getColor(embedType))
+            .setDescription("New structure found")
+            .setTitle(structure.name)
+            .setThumbnail(`https://images.evetech.net/types/${structure.type_id}/icon`)
+            .addFields(
+                { name: 'Fuel Remaining', value: formatTime(fuelMinutesRemaining) },
+                { name: 'Vulnerability Status', value: status, inline: true },
+                { name: 'Reinforce Hours', value: `${padNumber(structure.reinforce_hour,2)}00 ± 0200 hrs` },
+            )
+            .setTimestamp()
+        return embed;
+    }
+
+
     public static createFuelEmbed(structure: Structure): Embed{
 
         const fuelMinutesRemaining = structure.fuel_expires ? getMinutesDifference(new Date(), new Date(structure.fuel_expires)) : 0;
