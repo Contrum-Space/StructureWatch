@@ -202,11 +202,20 @@ export default class Bot {
             
                     const fuelMinutesRemaining = newStructure.fuel_expires ? getMinutesDifference(new Date(), new Date(newStructure.fuel_expires)) : 0;
             
-                    if (fuelMinutesRemaining < 1 && oldStructure?.fuel_expires && getMinutesDifference(new Date(), new Date(oldStructure.fuel_expires)) > 1) {
+                    if (
+                        fuelMinutesRemaining < 1 && 
+                        oldStructure?.fuel_expires && 
+                        getMinutesDifference(new Date(), new Date(oldStructure.fuel_expires)) > 1
+                        ) {
                         const embed = EmbedMaker.createFuelEmbed(newStructure);
                         messages.push(embed);
-                    } else if (fuelMinutesRemaining >= 1 && fuelMinutesRemaining < (60 * 24 * 3) &&
-                            oldStructure && oldStructure.fuel_expires && getMinutesDifference(new Date(), new Date(oldStructure.fuel_expires)) >= (60 * 24 * 3)) {
+                    } else if (
+                        fuelMinutesRemaining >= 1 &&
+                        fuelMinutesRemaining < 60 * 24 * 3 &&
+                        oldStructure &&
+                        oldStructure.fuel_expires &&
+                        getMinutesDifference(new Date(), new Date(oldStructure.fuel_expires)) >= 60 * 24 * 3
+                    ) {
                         const embed = EmbedMaker.createFuelEmbed(newStructure);
                         messages.push(embed);
                     }
@@ -216,7 +225,11 @@ export default class Bot {
         }
         
         if (messages.length > 0) {
-            this.sendEmbeds(this.structurePingChannelID, messages, "@everyone");
+            const chunkSize = 10;
+            for (let i = 0; i < messages.length; i += chunkSize) {
+                const chunk = messages.slice(i, i + chunkSize);
+                this.sendEmbeds(this.structurePingChannelID, chunk,  i == 0 ? "@everyone" : "");
+            }
         }
     }
     
