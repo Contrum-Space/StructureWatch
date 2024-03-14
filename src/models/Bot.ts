@@ -144,14 +144,19 @@ export default class Bot {
         const structures = await ESI.getStructureData();
         await this.getStructurePings(structures);
 
+        const chunkSize = 10;
         const embeds = [];
-    
-        for(const structure of structures){
-            embeds.push(
-                EmbedMaker.createStructureEmbed(structure));
+        
+        for (const structure of structures) {
+            embeds.push(EmbedMaker.createStructureEmbed(structure));
         }
-
-        this.sendEmbeds(this.structureListChannelID, embeds);    
+        
+        if (embeds.length > 0) {
+            for (let i = 0; i < embeds.length; i += chunkSize) {
+                const chunk = embeds.slice(i, i + chunkSize);
+                this.sendEmbeds(this.structureListChannelID, chunk);
+            }
+        }
 
         await fs.writeFile(ESI.structureFile, JSON.stringify(structures));
 
