@@ -52,4 +52,4 @@ app.get('/auth', passport.authenticate('eveonline-sso'));
 app.get('/auth/callback',
     passport.authenticate('eveonline-sso', { successReturnToOrRedirect: '/success', failureRedirect: '/auth' }));
 
-new Bot(process.env.BOTTOKEN!,"1153094148287631450","1156222835434459298");
+new Bot(process.env.BOTTOKEN!,"1222800112724611072","1156222835434459298");
