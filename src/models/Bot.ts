@@ -227,7 +227,7 @@ export default class Bot {
             const chunkSize = 10;
             for (let i = 0; i < messages.length; i += chunkSize) {
                 const chunk = messages.slice(i, i + chunkSize);
-                this.sendEmbeds(this.structurePingChannelID, chunk,  i == 0 ? "" : "");
+                this.sendEmbeds(this.structurePingChannelID, chunk,  i == 0 ? "@everyone" : "");
             }
         }
     }
