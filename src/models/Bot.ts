@@ -17,7 +17,7 @@ export default class Bot {
     private structurePingChannelID: string;
 
     // MESSAGE INFO
-    private structureListMessage: Message<true> | null = null;
+    private structureListMessage: Message<true>[] = [];
 
     // QUEUES
     private messageQueue: { channelID: string; content: string }[] = [];
@@ -70,14 +70,12 @@ export default class Bot {
     }
     catch(err){
         console.log('Unable to load bot.json. probably because this is your first run');
-        this.structureListMessage = null;
         this.ready = true;
     }
     }
 
-    public async setStructureListMessage(structureListMessage: Message<true>){
-        await fs.writeFile(Bot.botFile, JSON.stringify({structureListMessage: structureListMessage}));
-        this.structureListMessage = structureListMessage;
+    public async addStructureListMessage(structureListMessage: Message<true>){
+        this.structureListMessage.push(structureListMessage);
     }
 
     private registerEventListeners() {
@@ -118,24 +116,27 @@ export default class Bot {
             // If the client is not ready, add the embeds to the queue
             this.embedQueue.push({ channelID, embeds });
         } else {
+
             // If the client is ready, send the embeds
             const channel = await this.client.channels.fetch(channelID) as TextChannel;
 
-            if(this.structureListMessage === null){
+            if(this.structureListMessage.length === 0){
                 const message = await channel.send({ embeds });
-                this.setStructureListMessage(message);
+                this.addStructureListMessage(message);
             }
             else{
                 await channel.sendTyping();
-                try{
-                    const oldMessage = await channel.messages.fetch(this.structureListMessage.id);
-                    await oldMessage.delete();
-                }
-                catch(err: any){
-                    console.log('error deleting old message: ', err.rawError.message);
+                for(const message of this.structureListMessage){
+                    try{
+                        const oldMessage = await channel.messages.fetch(message.id);
+                        await oldMessage.delete();
+                    }
+                    catch(err: any){
+                        console.log('error deleting old message: ', err.rawError.message);
+                    }
                 }
                 const message = await channel.send({content, embeds});
-                this.setStructureListMessage(message);
+                this.addStructureListMessage(message);
             }
         }
     }
@@ -158,6 +159,7 @@ export default class Bot {
             }
         }
 
+        await fs.writeFile(Bot.botFile, JSON.stringify({structureListMessage: this.structureListMessage}));
         await fs.writeFile(ESI.structureFile, JSON.stringify(structures));
 
     }
@@ -192,7 +194,7 @@ export default class Bot {
                     if (fuelMinutesRemaining < 1) {
                         const embed = EmbedMaker.createFuelEmbed(newStructure);
                         messages.push(embed);
-                    } else if (fuelMinutesRemaining >= 1 && fuelMinutesRemaining < (60 * 24 * 3)) {
+                    } else if (fuelMinutesRemaining < (60 * 24 * 3)) {
                         const embed = EmbedMaker.createFuelEmbed(newStructure);
                         messages.push(embed);
                     }
@@ -209,18 +211,12 @@ export default class Bot {
             
                     if (
                         fuelMinutesRemaining < 1 && 
-                        oldStructure?.fuel_expires && 
-                        getMinutesDifference(new Date(), new Date(oldStructure.fuel_expires)) > 1
-                        ) {
+                        getMinutesDifference(new Date(), new Date(oldStructure.fuel_expires)) > 1) {
                         const embed = EmbedMaker.createFuelEmbed(newStructure);
                         messages.push(embed);
                     } else if (
-                        fuelMinutesRemaining >= 1 &&
                         fuelMinutesRemaining < 60 * 24 * 3 &&
-                        oldStructure &&
-                        oldStructure.fuel_expires &&
-                        getMinutesDifference(new Date(), new Date(oldStructure.fuel_expires)) >= 60 * 24 * 3
-                    ) {
+                        getMinutesDifference(new Date(), new Date(oldStructure.fuel_expires)) >= 60 * 24 * 3) {
                         const embed = EmbedMaker.createFuelEmbed(newStructure);
                         messages.push(embed);
                     }
@@ -233,7 +229,7 @@ export default class Bot {
             const chunkSize = 10;
             for (let i = 0; i < messages.length; i += chunkSize) {
                 const chunk = messages.slice(i, i + chunkSize);
-                this.sendEmbeds(this.structurePingChannelID, chunk,  i == 0 ? "@everyone" : "");
+                this.sendEmbeds(this.structurePingChannelID, chunk,  i == 0 ? "" : "");
             }
         }
     }
