@@ -116,28 +116,10 @@ export default class Bot {
             // If the client is not ready, add the embeds to the queue
             this.embedQueue.push({ channelID, embeds });
         } else {
-
             // If the client is ready, send the embeds
             const channel = await this.client.channels.fetch(channelID) as TextChannel;
-
-            if(this.structureListMessage.length === 0){
-                const message = await channel.send({ embeds });
-                this.addStructureListMessage(message);
-            }
-            else{
-                await channel.sendTyping();
-                for(const message of this.structureListMessage){
-                    try{
-                        const oldMessage = await channel.messages.fetch(message.id);
-                        await oldMessage.delete();
-                    }
-                    catch(err: any){
-                        console.log('error deleting old message: ', err.rawError.message);
-                    }
-                }
-                const message = await channel.send({content, embeds});
-                this.addStructureListMessage(message);
-            }
+            const message = await channel.send({ embeds });
+            this.addStructureListMessage(message);
         }
     }
 
@@ -151,6 +133,22 @@ export default class Bot {
         for (const structure of structures) {
             embeds.push(EmbedMaker.createStructureEmbed(structure));
         }
+
+        if(this.structureListMessage.length !== 0){
+
+        const channel = await this.client.channels.fetch(this.structureListChannelID) as TextChannel;
+        for(const message of this.structureListMessage){
+            try{
+                const oldMessage = await channel.messages.fetch(message.id);
+                await oldMessage.delete();
+            }
+            catch(err: any){
+                console.log('error deleting old message: ', err.rawError.message);
+            }
+        }
+        }
+
+        this.structureListMessage = [];
         
         if (embeds.length > 0) {
             for (let i = 0; i < embeds.length; i += chunkSize) {
