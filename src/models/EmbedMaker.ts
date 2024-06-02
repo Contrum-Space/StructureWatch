@@ -64,7 +64,7 @@ export default class EmbedMaker{
         const severity = getEmbedType(notification.type);
 
         const embed = new EmbedBuilder()
-            .setColor(this.getColor(severity))
+            // .setColor(this.getColor(severity))
             .setDescription(description)
             .setTitle(structure ? structure.name: '-')
             .setThumbnail(structure ? `https://images.evetech.net/types/${structure.type_id}/icon` : 'https://i.pinimg.com/280x280_RS/a0/5c/20/a05c20c71ed955df57f4bbadc9bebc4b.jpg')

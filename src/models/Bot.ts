@@ -64,6 +64,10 @@ export default class Bot {
                 await this.updateStructureList();
             }
         }, (1 * 60 * 1000)); // Check every minute
+
+        setInterval(async () => {
+            this.getStructurePings();
+        }, (5 * 60 * 1000)); // Check every 5 minutes
     }
 
     public async loadData(){
