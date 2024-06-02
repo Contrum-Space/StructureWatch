@@ -194,13 +194,13 @@ export default class Bot {
         if(firstRun){
             // if first run, add every notif to collection
             notifsToPing = []
-            await fs.appendFile(Bot.notificationsFile, notifications.map(notif => notif.notification_id.toString()).join('\n'));
+            await fs.appendFile(Bot.notificationsFile, "\n" + notifications.map(notif => notif.notification_id.toString()).join('\n'));
         }
         else{
             // else only ping those who dont exist in collection
             const notifsAlreadyPinged = (await fs.readFile(Bot.notificationsFile, 'utf-8')).split('\n');
             notifsToPing = notifications.filter(notif => !notifsAlreadyPinged.includes(notif.notification_id.toString()));
-            await fs.appendFile(Bot.notificationsFile, notifsToPing.map(notif => notif.notification_id.toString()).join('\n'));
+            await fs.appendFile(Bot.notificationsFile, "\n" + notifsToPing.map(notif => notif.notification_id.toString()).join('\n'));
         }
 
         // send pings
