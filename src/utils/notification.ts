@@ -15,6 +15,8 @@ export function getEmbedType(notificationType: string){
         "StructureLostArmor",
         "StructureLostShields",
         "StructureImpendingAbandonmentAssetsAtRisk",
+        "StructureWentLowPower",
+        "StructureServicesOffline"
       ];
       const warningNotifications = [
         "StructureFuelAlert",

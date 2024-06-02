@@ -23,7 +23,7 @@ export default class Bot {
 
     // QUEUES
     private messageQueue: { channelID: string; content: string }[] = [];
-    private embedQueue: { channelID: string; embeds: Embed[] }[] = [];
+    private embedQueue: { channelID: string; embeds: Embed[]; content: string }[] = [];
 
     // FILES
     private static notificationsFile: string = path.join(__dirname, '..' , '..', 'data', 'notifications.json');
@@ -121,11 +121,11 @@ export default class Bot {
     public async sendEmbeds(channelID: string, embeds: Embed[], content :string = "") {
         if (!this.ready) {
             // If the client is not ready, add the embeds to the queue
-            this.embedQueue.push({ channelID, embeds });
+            this.embedQueue.push({ channelID, embeds, content });
         } else {
             // If the client is ready, send the embeds
             const channel = await this.client.channels.fetch(channelID) as TextChannel;
-            const message = await channel.send({ embeds });
+            const message = await channel.send({ embeds, content });
             this.addStructureListMessage(message);
         }
     }
