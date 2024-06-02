@@ -4,8 +4,10 @@ import EmbedMaker from "./EmbedMaker";
 import fs from 'fs/promises';
 import { getMinutesDifference, getMinutesDifferenceSigned, sleep } from "../utils/time";
 import path from "path";
-import { mapStateToMessage } from "../utils/state";
-
+import { mapStateToMessage } from "../utils/structures";
+import { parseISO } from "date-fns";
+import { Notification } from "./ESI";
+import { toProperCase } from "../utils/format";
 export default class Bot {
     // BOT INFO
     private client: Client<boolean>;
@@ -23,6 +25,8 @@ export default class Bot {
     private messageQueue: { channelID: string; content: string }[] = [];
     private embedQueue: { channelID: string; embeds: Embed[] }[] = [];
 
+    // FILES
+    private static notificationsFile: string = path.join(__dirname, '..' , '..', 'data', 'notifications.json');
     private static botFile: string = path.join(__dirname, '..' , '..','data', 'bot.json');
 
     constructor(botToken: string, structureListChannelID: string, structurePingChannelID: string) {
@@ -34,6 +38,7 @@ export default class Bot {
         this.client.login(this.botToken);
         this.registerEventListeners();
 
+        ESI.getNewToken();
         this.startCron();
     }
 
@@ -43,7 +48,8 @@ export default class Bot {
             await sleep(2000);
         }
 
-        this.loadData();
+        console.log('ESI Initialized');
+
         this.updateStructureList();
 
         setInterval(async () => {
@@ -61,17 +67,17 @@ export default class Bot {
     }
 
     public async loadData(){
-    try{
-        const rawData = await fs.readFile(Bot.botFile, 'utf-8');
-        const data = JSON.parse(rawData);
-        this.structureListMessage = data.structureListMessage;
-        this.ready = true;
-        console.log('Successfully loaded data from bot.json');
-    }
-    catch(err){
-        console.log('Unable to load bot.json. probably because this is your first run');
-        this.ready = true;
-    }
+        try{
+            const rawData = await fs.readFile(Bot.botFile, 'utf-8');
+            const data = JSON.parse(rawData);
+            this.structureListMessage = data.structureListMessage;
+            this.ready = true;
+            console.log('Successfully loaded data from bot.json');
+        }
+        catch(err){
+            console.log('Unable to load bot.json. probably because this is your first run');
+            this.ready = true;
+        }
     }
 
     public async addStructureListMessage(structureListMessage: Message<true>){
@@ -81,6 +87,7 @@ export default class Bot {
     private registerEventListeners() {
         this.client.on('ready', async () => {
             console.log(`Logged in as ${this.client.user?.tag}!`);
+            this.ready = true;
             this.processMessageQueue();
             this.processEmbedsQueue();
         });
@@ -125,7 +132,11 @@ export default class Bot {
 
     public async updateStructureList() {
         const structures = await ESI.getStructureData();
-        await this.getStructurePings(structures);
+        console.log(structures.length);
+        if( structures.length === 0 ){
+            console.log('no structures found')
+            return;
+        }
 
         const chunkSize = 10;
         const embeds = [];
@@ -156,78 +167,63 @@ export default class Bot {
                 this.sendEmbeds(this.structureListChannelID, chunk);
             }
         }
-
         await fs.writeFile(Bot.botFile, JSON.stringify({structureListMessage: this.structureListMessage}));
         await fs.writeFile(ESI.structureFile, JSON.stringify(structures));
 
+        await this.getStructurePings();
+
     }
 
-    public async getStructurePings(structures: Structure[]) {
+    private async getStructurePings() {
+        const notifications = await ESI.getNotifications();
 
-        let data = [];
 
-        if(!ESI.firstRun){
-        const rawData = await fs.readFile(ESI.structureFile, 'utf-8');
-        data = JSON.parse(rawData);
+        let firstRun = false;
+
+        try{
+            await fs.access(Bot.notificationsFile);
         }
-    
-        const messages: Embed[] = [];
-    
-        for (const newStructure of structures) {
-            const oldStructure = data.find((s: Structure) => s.structure_id === newStructure.structure_id);
-    
-            if(oldStructure === undefined){
-                const embed = EmbedMaker.createNewStructureEmbed(newStructure);
-                messages.push(embed);
-            }
-            else{
-                if(ESI.firstRun === true){
-                    if(newStructure.state!=='shield_vulnerable'){
-                        const embed = EmbedMaker.createStatusEmbed(newStructure);
-                        messages.push(embed);
-                    }
-
-                    const fuelMinutesRemaining = newStructure.fuel_expires ? getMinutesDifference(new Date(), new Date(newStructure.fuel_expires)) : 0;
-            
-                    if (fuelMinutesRemaining < 1) {
-                        const embed = EmbedMaker.createFuelEmbed(newStructure);
-                        messages.push(embed);
-                    } else if (fuelMinutesRemaining < (60 * 24 * 3)) {
-                        const embed = EmbedMaker.createFuelEmbed(newStructure);
-                        messages.push(embed);
-                    }
-                }
-            
-                else{
-
-                    if ((oldStructure.state !== newStructure.state)) {
-                        const embed = EmbedMaker.createStatusChangeEmbed(newStructure, oldStructure);
-                        messages.push(embed);
-                    }
-            
-                    const fuelMinutesRemaining = newStructure.fuel_expires ? getMinutesDifference(new Date(), new Date(newStructure.fuel_expires)) : 0;
-            
-                    if (
-                        fuelMinutesRemaining < 1 && 
-                        getMinutesDifference(new Date(), new Date(oldStructure.fuel_expires)) > 1) {
-                        const embed = EmbedMaker.createFuelEmbed(newStructure);
-                        messages.push(embed);
-                    } else if (
-                        fuelMinutesRemaining < 60 * 24 * 3 &&
-                        getMinutesDifference(new Date(), new Date(oldStructure.fuel_expires)) >= 60 * 24 * 3) {
-                        const embed = EmbedMaker.createFuelEmbed(newStructure);
-                        messages.push(embed);
-                    }
-                }
-            }
-
+        catch(err){
+            // file doesnt exist, create it
+            await fs.open(Bot.notificationsFile, 'w');
+            firstRun = true;
         }
+
+        let notifsToPing: Notification[] = [];
+
+        if(firstRun){
+            // if first run, add every notif to collection
+            notifsToPing = []
+            await fs.appendFile(Bot.notificationsFile, notifications.map(notif => notif.notification_id.toString()).join('\n'));
+        }
+        else{
+            // else only ping those who dont exist in collection
+            const notifsAlreadyPinged = (await fs.readFile(Bot.notificationsFile, 'utf-8')).split('\n');
+            notifsToPing = notifications.filter(notif => !notifsAlreadyPinged.includes(notif.notification_id.toString()));
+            await fs.appendFile(Bot.notificationsFile, notifsToPing.map(notif => notif.notification_id.toString()).join('\n'));
+        }
+
+        // send pings
+
+        const embedsToPing: Embed[] = [];
+
+        const structures = JSON.parse(await fs.readFile(ESI.structureFile, 'utf-8'));
+
+        for(const notif of notifsToPing){
+            const embed = EmbedMaker.createNotificationEmbed(notif, structures)
+            if(!embed){
+                continue;
+            }
+            embedsToPing.push(embed);
+        }
+
         
-        if (messages.length > 0) {
-            const chunkSize = 10;
-            for (let i = 0; i < messages.length; i += chunkSize) {
-                const chunk = messages.slice(i, i + chunkSize);
-                this.sendEmbeds(this.structurePingChannelID, chunk,  i == 0 ? "@everyone" : "");
+        const chunkSize = 10;
+ 
+        if (embedsToPing.length > 0) {
+            for (let i = 0; i < embedsToPing.length; i += chunkSize) {
+                const chunk = embedsToPing.slice(i, i + chunkSize);
+                this.sendEmbeds(this.structurePingChannelID, chunk, '@everyone\n');
             }
         }
     }

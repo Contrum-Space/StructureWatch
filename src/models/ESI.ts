@@ -21,15 +21,40 @@ export interface Structure {
     unanchors_at: string;
 }
 
+export interface Character {
+    alliance_id: number;
+    birthday: string;
+    bloodline_id: number;
+    corporation_id: number;
+    description: string;
+    faction_id: number;
+    gender: string;
+    name: string;
+    race_id: number;
+    security_status: number;
+    title: string;
+  };
+
 export interface Structure {
     name: string;
     state: string;
 }
 
+export interface Notification {
+  is_read: boolean;
+  notification_id: number;
+  sender_id?: number; // Optional property with type number
+  sender_type: string;
+  text: string;
+  timestamp: string; // Assuming it represents a date-time format
+  type: string;
+};
+
 
 export default class ESI{
     private static basePath: string = 'https://esi.evetech.net/latest/';
     private static corporationID: string = '98739705';
+    private static characterID: string = ''
 
     // ESI Keys
     private static clientId: string;
@@ -60,6 +85,7 @@ export default class ESI{
         const data = JSON.parse(rawData);
         ESI.accessToken = data.accessToken;
         ESI.refreshToken = data.refreshToken;
+        ESI.characterID = data.characterID;
         await this.getNewToken();
         console.log('successfully loaded user from account.json');
         }
@@ -68,14 +94,18 @@ export default class ESI{
         }
     }
 
-    public static async setUser(accessToken: string, refreshToken: string){
+    public static async setUser(accessToken: string, refreshToken: string, profile: any){
+        ESI.characterID = profile.CharacterID;
         ESI.accessToken = accessToken;
         ESI.refreshToken = refreshToken;
-        await fs.writeFile(ESI.accountFile, JSON.stringify({accessToken, refreshToken}));
+        await fs.writeFile(ESI.accountFile, JSON.stringify({accessToken, refreshToken, characterID: this.characterID}));
     }
 
     static async getNewToken(){
         try {
+            if(ESI.refreshToken === ''){
+                return;
+            }
             console.log('starting token refresh');
             const response = await axios.post(
                 'https://login.eveonline.com/v2/oauth/token',
@@ -98,7 +128,7 @@ export default class ESI{
 
     public static async getStructureData(): Promise<Structure[]> {
         try {
-            while(ESI.accessToken === undefined){
+            while(ESI.accessToken === undefined || ESI.corporationID === ''){
                 // wait to load esi tokens
                 await(sleep(2000));
             }
@@ -133,6 +163,29 @@ export default class ESI{
             return structuresResponse.data
         } catch (error: any) {
             console.error('Error fetching structure data:', error);
+            return [];
+        }
+    }
+
+    public static async getNotifications(): Promise<Notification[]> {
+        try {
+            while(ESI.accessToken === undefined || ESI.characterID == ''){
+                // wait to load esi tokens
+                await(sleep(2000));
+            }
+
+            await this.getNewToken()
+            // Fetch system kills data
+            const notificationsResponse = await axios.get<Notification[]>(
+                `${ESI.basePath}characters/${ESI.characterID}/notifications`,{
+                headers:{
+                    "Authorization": `Bearer ${ESI.accessToken}`
+                }}
+            );
+
+            return notificationsResponse.data.filter(notif => notif.type.includes('Structure')); // only return structure notifications
+        } catch (error: any) {
+            console.error('Error fetching character notifications:', error);
             return [];
         }
     }

@@ -26,7 +26,7 @@ const strategy = new EveOnlineSsoStrategy({
     scope: process.env.SCOPES
 },
     function (accessToken: any, refreshToken: any, profile: any, done: any) {
-        ESI.setUser(accessToken, refreshToken);
+        ESI.setUser(accessToken, refreshToken, profile);
         return done(null, profile);
     }
 )

@@ -1,3 +1,5 @@
+import { Structure } from "../models/ESI";
+
 type StateMapping = {
     [key: string]: string;
 };
@@ -20,4 +22,11 @@ export function mapStateToMessage(state: string): string {
     };
 
     return stateMap[state] || 'UNKNOWN';
+}
+
+export function findStructureByID(structures: Structure[], structureID: string|null): Structure | undefined {
+    if(!structureID){
+        return undefined
+    }
+    return structures.find(structure => structure.structure_id.toString() === structureID);
 }

@@ -1,6 +1,4 @@
 build/
 node_modules/
 .env
-account.json
-bot.json
-structures.json
+data/
