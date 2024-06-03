@@ -26,10 +26,10 @@ export default class EmbedMaker{
 
         let embedType: Highlight_Type = 'normal';
 
-        if(fuelMinutesRemaining < 1){
+        if(fuelMinutesRemaining >= 1 && fuelMinutesRemaining <= (60*24*3)){
             embedType = 'critical'
         }
-        else if(fuelMinutesRemaining >= 1 && fuelMinutesRemaining < (60*24*3)){
+        else if(fuelMinutesRemaining > (60*24*3) && fuelMinutesRemaining <= (60*24*7)){
             embedType = 'warning'
         }
 
