@@ -22,10 +22,12 @@ export default class Bot {
 
     private notificationCounter: Gauge;
     private minFuelStructure: Gauge;
+    private structureMetrics: Gauge;
 
-    constructor(botToken: string, structureListChannelID: string, structurePingChannelID: string, notificationCounter: Gauge, minFuelStructure: Gauge) {
+    constructor(botToken: string, structureListChannelID: string, structurePingChannelID: string, notificationCounter: Gauge, minFuelStructure: Gauge, structureMetrics: Gauge) {
         this.notificationCounter = notificationCounter;
         this.minFuelStructure = minFuelStructure;
+        this.structureMetrics = structureMetrics;
         this.client = new Client({ intents: [GatewayIntentBits.GuildMessages] });
         this.botToken = botToken;
         this.structureListChannelID = structureListChannelID;
@@ -160,6 +162,7 @@ export default class Bot {
         let minFuelStructure: Structure | null = null;
         for(const structure of structures){
             const fuelMinutesRemaining = structure.fuel_expires ? getMinutesDifference(new Date(), new Date(structure.fuel_expires)) : 0;
+            this.structureMetrics.set({structure: structure.name, status: structure.state}, fuelMinutesRemaining);
             if(fuelMinutesRemaining < minFuel){
                 minFuel = fuelMinutesRemaining;
                 minFuelStructure = structure;

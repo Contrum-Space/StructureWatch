@@ -17,6 +17,12 @@ const minFuelStructure = new client.Gauge({
     labelNames: ['structure'],
 });
 
+const structureMetrics = new client.Gauge({
+    name: 'structure_metrics',
+    help: 'Gauge for structure metrics',
+    labelNames: ['structure', 'status'],
+});
+
 import passport from 'passport';
 const EveOnlineSsoStrategy = require('passport-eveonline-sso');
 
@@ -72,7 +78,8 @@ const bot = new Bot(
     "1222800112724611072",
     "1156222835434459298",
     notificationCounter,
-    minFuelStructure
+    minFuelStructure,
+    structureMetrics
 );
 
 // Start the server
