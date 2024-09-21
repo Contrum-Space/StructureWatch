@@ -183,7 +183,7 @@ export default class ESI{
                 }}
             );
 
-            return notificationsResponse.data.filter(notif => notif.type.includes('Structure')); // only return structure notifications
+            return notificationsResponse.data.filter(notif => ( notif.type.includes('Structure') || notif.type.includes('AllAnchoringMsg') )); // only return structure notifications
         } catch (error: any) {
             console.error('Error fetching character notifications:', error);
             return [];
