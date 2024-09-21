@@ -1,4 +1,4 @@
-import { Client, Embed, EmbedBuilder, GatewayIntentBits, Message, TextChannel } from "discord.js";
+import { Client, EmbedBuilder, GatewayIntentBits, Message, TextChannel } from "discord.js";
 import ESI, { Structure, Notification } from "./ESI";
 import EmbedMaker from "./EmbedMaker";
 import fs from 'fs/promises';
@@ -44,7 +44,6 @@ export default class Bot {
     }
 
     private initializeESI() {
-        ESI.getNewToken();
         this.startCron();
     }
 
@@ -55,9 +54,11 @@ export default class Bot {
     }
 
     private async waitForESIInitialization() {
-        while (ESI.accessToken === undefined) {
+        if(ESI.accessToken === undefined){
             console.log('Waiting for ESI initialization');
-            await sleep(2000);
+            while (ESI.accessToken === undefined) {
+                await sleep(2000);
+            }
         }
         console.log('ESI Initialized');
     }
@@ -202,7 +203,7 @@ export default class Bot {
 
     private async saveStructureData(structures: Structure[]) {
         await fs.writeFile(Bot.BOT_FILE, JSON.stringify({ structureListMessage: this.structureListMessages }));
-        await fs.writeFile(ESI.structureFile, JSON.stringify(structures));
+        await fs.writeFile(ESI.STRUCTURE_FILE, JSON.stringify(structures));
     }
 
     private async getStructurePings() {
@@ -246,7 +247,7 @@ export default class Bot {
     }
 
     private async sendNotificationPings(notifsToPing: Notification[]) {
-        const structures: Structure[] = JSON.parse(await fs.readFile(ESI.structureFile, 'utf-8'));
+        const structures: Structure[] = JSON.parse(await fs.readFile(ESI.STRUCTURE_FILE, 'utf-8'));
         const embedsToPing = notifsToPing
             .map(notif => EmbedMaker.createNotificationEmbed(notif, structures))
             .filter(embed => embed !== null);

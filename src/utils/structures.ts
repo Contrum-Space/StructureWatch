@@ -1,32 +1,30 @@
 import { Structure } from "../models/ESI";
 
-type StateMapping = {
-    [key: string]: string;
-};
-
-export function mapStateToMessage(state: string): string {
-    const stateMap: StateMapping = {
-        anchor_vulnerable: 'VULNERABLE [ANCHOR]',
-        anchoring: 'ANCHORING',
-        armor_reinforce: 'REINFORCED [ARMOR]',
-        armor_vulnerable: 'VULNERABLE [ARMOR]',
-        deploy_vulnerable: 'VULNERABLE [DEPLOY]',
-        fitting_invulnerable: 'INVULNERABLE [FITTING]',
-        hull_reinforce: 'REINFORCED [HULL]',
-        hull_vulnerable: 'VULNERABLE [HULL]',
-        online_deprecated: 'ONLINE [DEPRECATED]',
-        onlining_vulnerable: 'VULNERABLE [ONLINING]',
-        shield_vulnerable: 'VULNERABLE [SHIELD]',
-        unanchored: 'UNANCHORED',
-        unknown: 'UNKNOWN',
-    };
-
-    return stateMap[state] || 'UNKNOWN';
+enum StructureState {
+    ANCHOR_VULNERABLE = 'VULNERABLE [ANCHOR]',
+    ANCHORING = 'ANCHORING',
+    ARMOR_REINFORCE = 'REINFORCED [ARMOR]',
+    ARMOR_VULNERABLE = 'VULNERABLE [ARMOR]',
+    DEPLOY_VULNERABLE = 'VULNERABLE [DEPLOY]',
+    FITTING_INVULNERABLE = 'INVULNERABLE [FITTING]',
+    HULL_REINFORCE = 'REINFORCED [HULL]',
+    HULL_VULNERABLE = 'VULNERABLE [HULL]',
+    ONLINE_DEPRECATED = 'ONLINE [DEPRECATED]',
+    ONLINING_VULNERABLE = 'VULNERABLE [ONLINING]',
+    SHIELD_VULNERABLE = 'VULNERABLE [SHIELD]',
+    UNANCHORED = 'UNANCHORED',
+    UNKNOWN = 'UNKNOWN'
 }
 
-export function findStructureByID(structures: Structure[], structureID: string|null): Structure | undefined {
-    if(!structureID){
-        return undefined
+export function mapStateToMessage(state: string): string {
+    return Object.values(StructureState).includes(state as StructureState)
+        ? state
+        : StructureState.UNKNOWN;
+}
+
+export function findStructureByID(structures: Structure[], structureID: string | null): Structure | undefined {
+    if (!structureID) {
+        return undefined;
     }
     return structures.find(structure => structure.structure_id.toString() === structureID);
 }

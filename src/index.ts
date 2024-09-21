@@ -73,7 +73,7 @@ app.get('/metrics', async (req: Request, res: Response) => {
 });
 
 // Initialize Bot
-const bot = new Bot(
+new Bot(
     process.env.BOTTOKEN!,
     "1222800112724611072",
     "1156222835434459298",

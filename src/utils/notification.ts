@@ -2,37 +2,36 @@ import { Notification } from "../models/ESI";
 
 export function getStructureID(notification: Notification): string | null {
     const match = notification.text.match(/structureID: \&\w+\s+(\d+)/);
-    if (match) {
-      return match[1]; // Access the captured ID (group 1)
-    }
-    return null;
+    return match ? match[1] : null;
 }
 
-export function getEmbedType(notificationType: string){
-    const criticalNotifications = [
-        "StructureDestroyed",
-        "StructureUnderAttack",
-        "StructureLostArmor",
-        "StructureLostShields",
-        "StructureImpendingAbandonmentAssetsAtRisk",
-        "StructureWentLowPower",
-        "StructureServicesOffline"
-      ];
-      const warningNotifications = [
-        "StructureFuelAlert",
-        "StructureServicesOffline",
-        "StructuresJobsCancelled",
-        "StructuresJobsPaused",
-        "StructureReinforcementChanged",
-      ];
-    
-      notificationType = notificationType.toUpperCase(); // Ensure case-insensitive matching
-    
-      if (criticalNotifications.includes(notificationType)) {
+export function getEmbedType(notificationType: string): "critical" | "warning" | "normal" {
+    const notificationTypes = {
+        critical: [
+            "StructureDestroyed",
+            "StructureUnderAttack",
+            "StructureLostArmor",
+            "StructureLostShields",
+            "StructureImpendingAbandonmentAssetsAtRisk",
+            "StructureWentLowPower",
+            "StructureServicesOffline"
+        ],
+        warning: [
+            "StructureFuelAlert",
+            "StructureServicesOffline",
+            "StructuresJobsCancelled",
+            "StructuresJobsPaused",
+            "StructureReinforcementChanged",
+        ]
+    };
+
+    const upperCaseType = notificationType.toUpperCase();
+
+    if (notificationTypes.critical.includes(upperCaseType)) {
         return "critical";
-      } else if (warningNotifications.includes(notificationType)) {
+    } else if (notificationTypes.warning.includes(upperCaseType)) {
         return "warning";
-      } else {
+    } else {
         return "normal";
-      }
+    }
 }
