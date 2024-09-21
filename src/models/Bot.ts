@@ -2,8 +2,9 @@ import { Client, Embed, EmbedBuilder, GatewayIntentBits, Message, TextChannel } 
 import ESI, { Structure, Notification } from "./ESI";
 import EmbedMaker from "./EmbedMaker";
 import fs from 'fs/promises';
-import { getMinutesDifferenceSigned, sleep } from "../utils/time";
+import { getMinutesDifference, getMinutesDifferenceSigned, sleep } from "../utils/time";
 import path from "path";
+import { Gauge } from "prom-client";
 
 export default class Bot {
     private client: Client<boolean>;
@@ -19,7 +20,12 @@ export default class Bot {
     private static readonly NOTIFICATIONS_FILE: string = path.join(__dirname, '..', '..', 'data', 'notifications.json');
     private static readonly BOT_FILE: string = path.join(__dirname, '..', '..', 'data', 'bot.json');
 
-    constructor(botToken: string, structureListChannelID: string, structurePingChannelID: string) {
+    private notificationCounter: Gauge;
+    private minFuelStructure: Gauge;
+
+    constructor(botToken: string, structureListChannelID: string, structurePingChannelID: string, notificationCounter: Gauge, minFuelStructure: Gauge) {
+        this.notificationCounter = notificationCounter;
+        this.minFuelStructure = minFuelStructure;
         this.client = new Client({ intents: [GatewayIntentBits.GuildMessages] });
         this.botToken = botToken;
         this.structureListChannelID = structureListChannelID;
@@ -150,6 +156,20 @@ export default class Bot {
             return;
         }
 
+        let minFuel = 0;
+        let minFuelStructure: Structure | null = null;
+        for(const structure of structures){
+            const fuelMinutesRemaining = structure.fuel_expires ? getMinutesDifference(new Date(), new Date(structure.fuel_expires)) : 0;
+            if(fuelMinutesRemaining < minFuel){
+                minFuel = fuelMinutesRemaining;
+                minFuelStructure = structure;
+            }
+        }
+
+        if(minFuelStructure){
+            this.minFuelStructure.set({structure: minFuelStructure.name}, minFuel);
+        }
+
         const embeds = structures.map(structure => EmbedMaker.createStructureEmbed(structure));
         await this.deleteOldStructureMessages();
         await this.sendStructureEmbeds(embeds);
@@ -200,6 +220,7 @@ export default class Bot {
     }
 
     private async getNotificationsToPing(notifications: Notification[], firstRun: boolean): Promise<Notification[]> {
+        this.notificationCounter.set(notifications.length);
         if (firstRun) {
             await this.saveNotifications(notifications);
             return [];

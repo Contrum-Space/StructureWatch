@@ -3,7 +3,19 @@ import express, { Request, Response } from 'express';
 import session from 'express-session';
 import Bot from './models/Bot';
 import ESI from './models/ESI';
-import EmbedMaker from './models/EmbedMaker';
+
+import client from 'prom-client';
+
+const notificationCounter = new client.Gauge({
+    name: 'notification_counter',
+    help: 'Counts the number of notifications'
+});
+
+const minFuelStructure = new client.Gauge({
+    name: 'min_fuel_structure',
+    help: 'Gauge for minimum fuel structure',
+    labelNames: ['structure'],
+});
 
 import passport from 'passport';
 const EveOnlineSsoStrategy = require('passport-eveonline-sso');
@@ -52,4 +64,9 @@ app.get('/auth', passport.authenticate('eveonline-sso'));
 app.get('/auth/callback',
     passport.authenticate('eveonline-sso', { successReturnToOrRedirect: '/success', failureRedirect: '/auth' }));
 
-new Bot(process.env.BOTTOKEN!,"1222800112724611072","1156222835434459298");
+new Bot(process.env.BOTTOKEN!,"1222800112724611072","1156222835434459298", notificationCounter, minFuelStructure);
+
+app.get('/metrics', async (req: Request, res: Response) => {
+    res.set('Content-Type', client.register.contentType);
+    res.send(await client.register.metrics());
+});
