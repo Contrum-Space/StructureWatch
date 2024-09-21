@@ -21,52 +21,61 @@ import passport from 'passport';
 const EveOnlineSsoStrategy = require('passport-eveonline-sso');
 
 const app = express();
+const PORT = process.env.PORT || 8000;
 
+// Configure session middleware
 app.use(session({
-    secret: 'keyboard cat',
+    secret: process.env.SESSION_SECRET || 'keyboard cat',
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false, maxAge: 28080000000 }
+    cookie: { secure: process.env.NODE_ENV === 'production', maxAge: 28080000000 }
 }));
 
+// Initialize ESI
 new ESI(process.env.CLIENTID!, process.env.SECRETKEY!);
 
-const strategy = new EveOnlineSsoStrategy({
+// Configure Eve Online SSO Strategy
+const eveSsoStrategy = new EveOnlineSsoStrategy({
     clientID: process.env.CLIENTID,
     secretKey: process.env.SECRETKEY,
     callbackURL: process.env.CALLBACK,
     scope: process.env.SCOPES
-},
-    function (accessToken: any, refreshToken: any, profile: any, done: any) {
-        ESI.setUser(accessToken, refreshToken, profile);
-        return done(null, profile);
-    }
-)
-
-passport.use(strategy);
-
-passport.serializeUser(function (user, done) {
-    done(null, user);
+}, async (accessToken: string, refreshToken: string, profile: any, done: Function) => {
+    await ESI.setUser(accessToken, refreshToken, profile);
+    done(null, profile);
 });
 
-passport.deserializeUser(function (user: any, done) {
-    done(null, user);
-});
+passport.use(eveSsoStrategy);
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((user: any, done) => done(null, user));
 
-app.listen(8000);
-
+// Configure routes
 app.get('/success', (req: Request, res: Response) => {
     res.send(`Bot is linked to new account successfully with access token - ${ESI.accessToken}`);
-})
+});
 
 app.get('/auth', passport.authenticate('eveonline-sso'));
 
-app.get('/auth/callback',
-    passport.authenticate('eveonline-sso', { successReturnToOrRedirect: '/success', failureRedirect: '/auth' }));
-
-new Bot(process.env.BOTTOKEN!,"1222800112724611072","1156222835434459298", notificationCounter, minFuelStructure);
+app.get('/auth/callback', passport.authenticate('eveonline-sso', {
+    successReturnToOrRedirect: '/success',
+    failureRedirect: '/auth'
+}));
 
 app.get('/metrics', async (req: Request, res: Response) => {
     res.set('Content-Type', client.register.contentType);
     res.send(await client.register.metrics());
+});
+
+// Initialize Bot
+const bot = new Bot(
+    process.env.BOTTOKEN!,
+    "1222800112724611072",
+    "1156222835434459298",
+    notificationCounter,
+    minFuelStructure
+);
+
+// Start the server
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });

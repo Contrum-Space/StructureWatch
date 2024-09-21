@@ -156,7 +156,7 @@ export default class Bot {
             return;
         }
 
-        let minFuel = 0;
+        let minFuel = Infinity;
         let minFuelStructure: Structure | null = null;
         for(const structure of structures){
             const fuelMinutesRemaining = structure.fuel_expires ? getMinutesDifference(new Date(), new Date(structure.fuel_expires)) : 0;
@@ -220,7 +220,6 @@ export default class Bot {
     }
 
     private async getNotificationsToPing(notifications: Notification[], firstRun: boolean): Promise<Notification[]> {
-        this.notificationCounter.set(notifications.length);
         if (firstRun) {
             await this.saveNotifications(notifications);
             return [];
@@ -231,6 +230,7 @@ export default class Bot {
 
     private async saveNotifications(notifications: Notification[]) {
         const notificationIds = notifications.map(notif => notif.notification_id.toString()).join('\n') + '\n';
+        this.notificationCounter.set(notificationIds.length);
         await fs.appendFile(Bot.NOTIFICATIONS_FILE, notificationIds);
     }
 
@@ -238,6 +238,7 @@ export default class Bot {
         const notifsAlreadyPinged = (await fs.readFile(Bot.NOTIFICATIONS_FILE, 'utf-8')).split('\n');
         const notifsToPing = notifications.filter(notif => !notifsAlreadyPinged.includes(notif.notification_id.toString()));
         await this.saveNotifications(notifsToPing);
+        this.notificationCounter.set(notifsToPing.length);
         return notifsToPing;
     }
 
