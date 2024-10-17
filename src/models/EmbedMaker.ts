@@ -53,7 +53,26 @@ export default class EmbedMaker {
         const structure = findStructureByID(structures, structureID);
 
         // to reduce moon drills spam
-        if (!structure || (structure.type_id === 81826 && (notification.type === 'StructureLowReagentsAlert' || notification.type === 'AllAnchoringMsg' || notification.type === 'StructureAnchoring' || notification.type === 'StructureUnanchoring'))) {
+        const ignoredNotificationTypes = [
+            'StructurePaintPurchased',
+            'StructuresJobsCancelled',
+            'StructuresJobsPaused',
+            'StructureItemsDelivered',
+            'StructureImpendingAbandonmentAssetsAtRisk',
+        ];
+
+        const ignoredMoonDrillNotificationTypes =  [
+            'StructureNoReagentsAlert',
+            'StructureLowReagentsAlert',
+            'AllAnchoringMsg',
+            'StructureAnchoring',
+            'StructureUnanchoring',
+        ];
+
+        const isRefineryStructure = structure?.type_id === 81826;
+        const isIgnoredNotificationType = ignoredNotificationTypes.includes(notification.type);
+
+        if (!structure || (isRefineryStructure && ignoredMoonDrillNotificationTypes) || isIgnoredNotificationType) {
             return null;
         }
 
