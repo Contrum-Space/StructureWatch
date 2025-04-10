@@ -72,6 +72,10 @@ app.get('/metrics', async (req: Request, res: Response) => {
     res.send(await client.register.metrics());
 });
 
+app.get('/', (req: Request, res: Response) => {
+    res.sendStatus(200);
+});
+
 // Initialize Bot
 new Bot(
     process.env.BOTTOKEN!,
