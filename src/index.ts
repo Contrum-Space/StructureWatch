@@ -52,6 +52,8 @@ const eveSsoStrategy = new EveOnlineSsoStrategy({
 });
 
 passport.use(eveSsoStrategy);
+app.use(passport.initialize());
+app.use(passport.session());
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((user: any, done) => done(null, user));
 
